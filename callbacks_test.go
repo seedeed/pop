@@ -2,10 +2,20 @@ package pop
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
+
+type UnAfterFindableModel struct {
+	ID    int
+	After string
+}
+
+type AfterFindableModel struct {
+	UnAfterFindableModel
+}
 
 var (
 	modelWith10FriendsForBench     *Model
@@ -26,6 +36,15 @@ func init() {
 
 func newFriends(size int) []Friend {
 	return make([]Friend, size)
+}
+
+func (m *AfterFindableModel) AfterFind(*Connection) error {
+	m.After = makeAfterString(m.ID)
+	return nil
+}
+
+func makeAfterString(id int) string {
+	return fmt.Sprintf("after %d", id)
 }
 
 func Test_Callbacks(t *testing.T) {
@@ -104,7 +123,7 @@ func Test_Callbacks_on_Slice(t *testing.T) {
 func BenchmarkModelWith10Friends_afterFind(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		if e := modelWith10FriendsForBench.afterFind(fakeConn); e != nil {
-			b.Fatalf("benchmark fail. %v", e)
+			b.Fatalf("benchmark fail. %v\n", e)
 		}
 	}
 }
@@ -112,7 +131,7 @@ func BenchmarkModelWith10Friends_afterFind(b *testing.B) {
 func BenchmarkModelWith100Friends_afterFind(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		if e := modelWith100FriendsForBench.afterFind(fakeConn); e != nil {
-			b.Fatalf("benchmark fail. %v", e)
+			b.Fatalf("benchmark fail. %v\n", e)
 		}
 	}
 }
@@ -120,7 +139,7 @@ func BenchmarkModelWith100Friends_afterFind(b *testing.B) {
 func BenchmarkModelWith1000Friends_afterFind(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		if e := modelWith1000FriendsForBench.afterFind(fakeConn); e != nil {
-			b.Fatalf("benchmark fail. %v", e)
+			b.Fatalf("benchmark fail. %v\n", e)
 		}
 	}
 }
@@ -128,7 +147,7 @@ func BenchmarkModelWith1000Friends_afterFind(b *testing.B) {
 func BenchmarkModelWith10000Friends_afterFind(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		if e := modelWith10000FriendsForBench.afterFind(fakeConn); e != nil {
-			b.Fatalf("benchmark fail. %v", e)
+			b.Fatalf("benchmark fail. %v\n", e)
 		}
 	}
 }
@@ -136,7 +155,58 @@ func BenchmarkModelWith10000Friends_afterFind(b *testing.B) {
 func BenchmarkModelWith100000Friends_afterFind(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		if e := modelWith100000FriendsForBench.afterFind(fakeConn); e != nil {
-			b.Fatalf("benchmark fail. %v", e)
+			b.Fatalf("benchmark fail. %v\n", e)
+		}
+	}
+}
+
+func TestModel_afterFind(t *testing.T) {
+	r := require.New(t)
+	{
+		list := []AfterFindableModel{
+			{
+				UnAfterFindableModel{ID: 1113},
+			},
+			{
+				UnAfterFindableModel{ID: 1114},
+			},
+			{
+				UnAfterFindableModel{ID: 1115},
+			},
+			{
+				UnAfterFindableModel{ID: 1116},
+			},
+		}
+		model := NewModel(list, context.Background())
+
+		r.NoError(model.afterFind(fakeConn))
+
+		for _, item := range list {
+			r.Equal(makeAfterString(item.ID), item.After)
+		}
+	}
+
+	{
+		list := []UnAfterFindableModel{
+			{
+				ID: 1113,
+			},
+			{
+				ID: 1114,
+			},
+			{
+				ID: 1115,
+			},
+			{
+				ID: 1116,
+			},
+		}
+		model := NewModel(list, context.Background())
+
+		r.NoError(model.afterFind(fakeConn))
+
+		for _, item := range list {
+			r.Equal("", item.After)
 		}
 	}
 }
