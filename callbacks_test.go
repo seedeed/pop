@@ -1,10 +1,32 @@
 package pop
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
+
+var (
+	modelWith10FriendsForBench     *Model
+	modelWith100FriendsForBench    *Model
+	modelWith1000FriendsForBench   *Model
+	modelWith10000FriendsForBench  *Model
+	modelWith100000FriendsForBench *Model
+	fakeConn                       = &Connection{}
+)
+
+func init() {
+	modelWith10FriendsForBench = NewModel(newFriends(10), context.Background())
+	modelWith100FriendsForBench = NewModel(newFriends(100), context.Background())
+	modelWith1000FriendsForBench = NewModel(newFriends(1000), context.Background())
+	modelWith10000FriendsForBench = NewModel(newFriends(10000), context.Background())
+	modelWith100000FriendsForBench = NewModel(newFriends(100000), context.Background())
+}
+
+func newFriends(size int) []Friend {
+	return make([]Friend, size)
+}
 
 func Test_Callbacks(t *testing.T) {
 	if PDB == nil {
@@ -77,4 +99,44 @@ func Test_Callbacks_on_Slice(t *testing.T) {
 			r.Equal("AfterFind", u.AfterF)
 		}
 	})
+}
+
+func BenchmarkModelWith10Friends_afterFind(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		if e := modelWith10FriendsForBench.afterFind(fakeConn); e != nil {
+			b.Fatalf("benchmark fail. %v", e)
+		}
+	}
+}
+
+func BenchmarkModelWith100Friends_afterFind(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		if e := modelWith100FriendsForBench.afterFind(fakeConn); e != nil {
+			b.Fatalf("benchmark fail. %v", e)
+		}
+	}
+}
+
+func BenchmarkModelWith1000Friends_afterFind(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		if e := modelWith1000FriendsForBench.afterFind(fakeConn); e != nil {
+			b.Fatalf("benchmark fail. %v", e)
+		}
+	}
+}
+
+func BenchmarkModelWith10000Friends_afterFind(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		if e := modelWith10000FriendsForBench.afterFind(fakeConn); e != nil {
+			b.Fatalf("benchmark fail. %v", e)
+		}
+	}
+}
+
+func BenchmarkModelWith100000Friends_afterFind(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		if e := modelWith100000FriendsForBench.afterFind(fakeConn); e != nil {
+			b.Fatalf("benchmark fail. %v", e)
+		}
+	}
 }
