@@ -30,16 +30,13 @@ func (m *Model) afterFind(c *Connection) error {
 
 	wg := &errgroup.Group{}
 	for i := 0; i < rv.Len(); i++ {
-		func(i int) {
+		y := rv.Index(i)
+		y = y.Addr()
+		if x, ok := y.Interface().(AfterFindable); ok {
 			wg.Go(func() error {
-				y := rv.Index(i)
-				y = y.Addr()
-				if x, ok := y.Interface().(AfterFindable); ok {
-					return x.AfterFind(c)
-				}
-				return nil
+				return x.AfterFind(c)
 			})
-		}(i)
+		}
 	}
 
 	return wg.Wait()
